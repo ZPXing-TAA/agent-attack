@@ -89,6 +89,15 @@ If using Claude, configurate the Anthropic API key.
 export ANTHROPIC_API_KEY=<your-anthropic-api-key>
 ```
 
+If using a locally deployed model served by vLLM (OpenAI-compatible server), set:
+
+```bash
+export VLLM_BASE_URL=http://127.0.0.1:8000/v1
+export VLLM_API_KEY=EMPTY
+```
+
+Then pass a model string prefixed with `vllm:` (for example, `--model vllm:Qwen/Qwen2.5-VL-7B-Instruct`).
+
 If using Gemini, first install the [gcloud CLI](https://cloud.google.com/sdk/docs/install).
 Setup a Google Cloud project and get the ID at the [Google Cloud console](https://console.cloud.google.com/).
 Get the AI Studio API key from the [AI Studio console](https://aistudio.google.com/app/apikey).
@@ -337,6 +346,12 @@ bash step_scripts/claude3opus_clip_attack_no_cap.sh
 ## Known Issues
 
 See the ``FIXME`` comments in the code for some hard-coded hacks we used to work around slight differences in the environment.
+
+### Can I use a locally deployed LLM?
+
+Not out of the box. The current implementation is wired to hosted APIs (OpenAI, Anthropic Claude, and Google Gemini/Vertex), and setup instructions require their corresponding API keys.
+
+You can still add local model support, but it requires code changes (for example, adding a new model backend in `agent_attack/models/` and connecting it to the eval scripts).
 
 ## Citation
 

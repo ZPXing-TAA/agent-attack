@@ -12,6 +12,7 @@ from .gemini import Gemini
 from .gpt4v import GPT4V
 from .instructblip import InstructBLIP
 from .llava import LLaVa
+from .vllm import VLLM
 
 
 def get_model(hub_path: str) -> VLM:
@@ -25,6 +26,8 @@ def get_model(hub_path: str) -> VLM:
         return Gemini(hub_path)
     elif "claude" in hub_path:
         return Claude(hub_path)
+    elif "vllm" in hub_path:
+        return VLLM(hub_path)
     else:
         raise ValueError(f"Model {hub_path} not supported.")
 
@@ -95,6 +98,28 @@ def get_captioning_model(hub_path: str) -> VLM:
                         time.sleep(5)
                 print("Sleeping for 11 seconds")
                 time.sleep(11)
+                all_gen_texts.append(gen_text)
+            return all_gen_texts
+
+        return captioning_fn
+    elif "vllm" in hub_path:
+        model = VLLM(hub_path)
+        prompt_fn = model.get_captioning_prompt_fn()
+
+        def captioning_fn(images):
+            all_gen_texts = []
+            for image in images:
+                gen_text = "Error generating caption."
+                for _ in range(3):
+                    try:
+                        gen_text = model.generate_answer(
+                            [image],
+                            [prompt_fn()],
+                        )[0]
+                        break
+                    except Exception as e:
+                        print(e)
+                        time.sleep(5)
                 all_gen_texts.append(gen_text)
             return all_gen_texts
 
