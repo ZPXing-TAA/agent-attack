@@ -77,6 +77,7 @@ class VLLM(VLM):
         return_string_probabilities: Optional[List[str]] = None,
         image_sizes: Optional[torch.LongTensor] = None,
         temperature: Optional[float] = None,
+        return_generation_payloads: bool = False,
     ) -> Union[List[str], Tuple[List[str], List[List[float]]]]:
         if return_string_probabilities is not None:
             raise NotImplementedError("This method is not implemented for VLLM wrapper.")
@@ -86,6 +87,7 @@ class VLLM(VLM):
             generate_kwargs["temperature"] = temperature
 
         responses = []
+        payloads = []
         for image, question_prompt in zip(images, question_prompts, strict=True):
             base64_image = encode_image(image)
             content = [
@@ -103,6 +105,11 @@ class VLLM(VLM):
                 messages=[{"role": "user", "content": content}],
                 **generate_kwargs,
             )
-            responses.append(completion.choices[0].message.content)
+            choice = completion.choices[0]
+            responses.append(choice.message.content)
+            payloads.append(choice.logprobs.content if choice.logprobs else None)
+
+        if return_generation_payloads:
+            return responses, payloads
 
         return responses

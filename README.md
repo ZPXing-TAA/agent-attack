@@ -26,6 +26,7 @@ _ICLR 2025_ (also _Oral presentation at NeurIPS 2024 Open-World Agents Workshop_
     - [Setup experiment directory](#setup-experiment-directory)
   - [Usage](#usage)
     - [Run attacks](#run-attacks)
+    - [Entropy-based detection logging](#entropy-based-detection-logging)
     - [Setup for episode-wise evaluation](#setup-for-episode-wise-evaluation)
     - [Episode-wise evaluation](#episode-wise-evaluation)
     - [Stepwise evaluation](#stepwise-evaluation)
@@ -147,6 +148,16 @@ python scripts/run_clip_attack.py --model gpt-4o-2024-05-13
 ```
 
 The generated adversarial examples will be saved to files in the `exp_data/` directory.
+
+### Entropy-based detection logging
+
+We provide a minimal migration scaffold for entropy-based attack detection in VWA/VWA-Adv:
+
+- logprob-aware generation wrappers for GPT-4o/vLLM
+- JSON trajectory logging helpers
+- offline entropy feature extraction script
+
+See [`docs/vwa_entropy_migration.md`](docs/vwa_entropy_migration.md) for integration details.
 
 ### Setup for episode-wise evaluation
 
