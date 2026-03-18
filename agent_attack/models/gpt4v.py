@@ -16,6 +16,7 @@ import torch.nn as nn
 from accelerate import PartialState
 from langchain.chat_models import ChatOpenAI
 from langchain.schema.messages import HumanMessage, SystemMessage
+from openai import OpenAI
 from PIL import Image
 from torchvision.transforms import Compose, ToPILImage, ToTensor
 
@@ -60,10 +61,16 @@ class GPT4V(VLM):
         # Set Default VQA Generation Configuration
         self.max_length = max_length
         self.temperature = temperature
-        self.generate_kwargs = {"max_tokens": self.max_length, "temperature": 0}  # Greedy decoding
+        self.generate_kwargs = {
+            "max_tokens": self.max_length,
+            "temperature": 0,
+            "logprobs": True,
+            "top_logprobs": 10,
+        }  # Greedy decoding
 
         # Set Up Model
         self.use_langchain = True
+        self.client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
         if self.use_langchain:
             self.gpt4v = ChatOpenAI(
                 model_name=self.hub_path,
@@ -75,7 +82,9 @@ class GPT4V(VLM):
             raise NotImplementedError()
 
     def set_generate_kwargs(self, generate_kwargs):
-        self.generate_kwargs = generate_kwargs
+        self.generate_kwargs = generate_kwargs.copy()
+        self.generate_kwargs.setdefault("logprobs", True)
+        self.generate_kwargs.setdefault("top_logprobs", 10)
 
     def get_prompt_builder(self, system_prompt: Optional[str] = None) -> Any:
         return self.model.get_prompt_builder(system_prompt)
@@ -98,6 +107,7 @@ class GPT4V(VLM):
         return_string_probabilities: Optional[List[str]] = None,
         image_sizes: Optional[torch.LongTensor] = None,
         temperature: Optional[float] = None,
+        return_generation_payloads: bool = False,
     ) -> Union[List[str], Tuple[List[str], List[List[float]]]]:
         # Update generation kwargs with temperature if provided
         generate_kwargs = self.generate_kwargs.copy()
@@ -108,16 +118,27 @@ class GPT4V(VLM):
             raise NotImplementedError("This method is not implemented for GPT-4V.")
 
         responses = []
+        payloads = []
         for image, question_prompt in zip(images, question_prompts, strict=True):
             content = create_prompt_with_image(question_prompt, image)
-            if self.use_langchain:
+            if self.use_langchain and not return_generation_payloads:
                 output = self.gpt4v.invoke([HumanMessage(content=content)])
+                payload = None
             else:
-                raise NotImplementedError()
+                completion = self.client.chat.completions.create(
+                    model=str(self.hub_path),
+                    messages=[{"role": "user", "content": content}],
+                    **generate_kwargs,
+                )
+                output = completion.choices[0].message
+                payload = completion.choices[0].logprobs.content if completion.choices[0].logprobs else None
             print("output:", output)
             response = output.content
             responses.append(response)
+            payloads.append(payload)
 
+        if return_generation_payloads:
+            return responses, payloads
         return responses
 
 
