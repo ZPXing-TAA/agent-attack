@@ -44,14 +44,21 @@ class VLLM(VLM):
 
         self.max_length = max_length
         self.temperature = temperature
-        self.generate_kwargs = {"max_tokens": self.max_length, "temperature": self.temperature}
+        self.generate_kwargs = {
+            "max_tokens": self.max_length,
+            "temperature": self.temperature,
+            "logprobs": True,
+            "top_logprobs": 10,
+        }
 
         base_url = os.getenv("VLLM_BASE_URL", "http://localhost:8000/v1")
         api_key = os.getenv("VLLM_API_KEY", os.getenv("OPENAI_API_KEY", "EMPTY"))
         self.client = OpenAI(base_url=base_url, api_key=api_key)
 
     def set_generate_kwargs(self, generate_kwargs):
-        self.generate_kwargs = generate_kwargs
+        self.generate_kwargs = generate_kwargs.copy()
+        self.generate_kwargs.setdefault("logprobs", True)
+        self.generate_kwargs.setdefault("top_logprobs", 10)
 
     def get_prompt_builder(self, system_prompt: Optional[str] = None) -> Any:
         raise NotImplementedError("Prompt builder is not implemented for VLLM wrapper.")
