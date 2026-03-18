@@ -46,7 +46,7 @@ class EnsembleFeatureLoss(nn.Module):
 
     def __call__(self, feature: Tensor, y: Any = None) -> Tensor:
         index = self.count_to_index(self.count)
-        gt = self.ground_truth[index]
+        gt = self.ground_truth[index].to(feature.device)
         loss = self.feature_loss(feature, gt)
         self.count = self.count + 1
         # print(loss)
@@ -78,10 +78,10 @@ class CLIPFeatureLoss(nn.Module):
 
     def __call__(self, feature: Tensor, y: Any = None) -> Tensor:
         index = self.count_to_index(self.count)
-        gt = self.ground_truth[index]
+        gt = self.ground_truth[index].to(feature.device)
         loss = -torch.nn.functional.cosine_similarity(feature, gt).mean()
         if self.victim_text:
-            vt = self.victim_text[index]
+            vt = self.victim_text[index].to(feature.device)
             loss = loss + torch.nn.functional.cosine_similarity(feature, vt).mean()
         self.count = self.count + 1
         # print(loss)
@@ -121,9 +121,9 @@ class JointEnsembleFeatureLoss(nn.Module):
 
     def __call__(self, feature: Tensor, y: Any = None) -> Tensor:
         index = self.count_to_index(self.count)
-        gt = self.ground_truth[index]
+        gt = self.ground_truth[index].to(feature.device)
         loss = self.feature_loss(feature, gt)
-        source = self.source[index]
+        source = self.source[index].to(feature.device)
         source_loss = -self.feature_loss(feature, source)
         loss = loss * self.alpha + source_loss
         self.count = self.count + 1

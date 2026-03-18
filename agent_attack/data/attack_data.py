@@ -22,6 +22,10 @@ def get_base_example_dir(example_dir: str) -> str:
 
 def get_examples(traj_root):
     examples = []
+    if not os.path.isdir(traj_root):
+        print(f"[attack_data] Warning: trajectory root does not exist: {traj_root}")
+        return examples
+
     # Enumerate all directory names in the root directory
     for dir_name in sorted(os.listdir(traj_root)):
         if dir_name == ".DS_Store":
@@ -29,7 +33,20 @@ def get_examples(traj_root):
 
         # Enumerate all files in the directory
         example_dir = os.path.join(traj_root, dir_name)
+        if not os.path.isdir(example_dir):
+            continue
         base_example_dir = get_base_example_dir(example_dir)
+
+        required_paths = [
+            os.path.join(example_dir, "data.json"),
+            os.path.join(example_dir, "victim_image.png"),
+            os.path.join(base_example_dir, "obs_text.txt"),
+            os.path.join(base_example_dir, "obs_screenshot.png"),
+        ]
+        missing_paths = [p for p in required_paths if not os.path.exists(p)]
+        if missing_paths:
+            print(f"[attack_data] Skipping {dir_name}: missing files: {missing_paths}")
+            continue
 
         with open(os.path.join(example_dir, "data.json")) as f:
             data = json.load(f)
