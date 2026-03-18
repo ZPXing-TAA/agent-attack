@@ -44,17 +44,11 @@ class VLLM(VLM):
 
         self.max_length = max_length
         self.temperature = temperature
-        self.generate_kwargs = {
-            "max_tokens": self.max_length,
-            "temperature": self.temperature,
-            "logprobs": True,
-            "top_logprobs": int(os.getenv("VLLM_TOP_LOGPROBS", "20")),
-        }
+        self.generate_kwargs = {"max_tokens": self.max_length, "temperature": self.temperature}
 
         base_url = os.getenv("VLLM_BASE_URL", "http://localhost:8000/v1")
         api_key = os.getenv("VLLM_API_KEY", os.getenv("OPENAI_API_KEY", "EMPTY"))
         self.client = OpenAI(base_url=base_url, api_key=api_key)
-        self.last_logprobs = []
 
     def set_generate_kwargs(self, generate_kwargs):
         self.generate_kwargs = generate_kwargs
@@ -77,17 +71,14 @@ class VLLM(VLM):
         image_sizes: Optional[torch.LongTensor] = None,
         temperature: Optional[float] = None,
     ) -> Union[List[str], Tuple[List[str], List[List[float]]]]:
-        # Keep the signature aligned with the VLM protocol.
-        # For vLLM, we always request token-level logprobs from the server and cache them in
-        # `self.last_logprobs` for downstream consumers.
-        _ = return_string_probabilities
+        if return_string_probabilities is not None:
+            raise NotImplementedError("This method is not implemented for VLLM wrapper.")
 
         generate_kwargs = self.generate_kwargs.copy()
         if temperature is not None:
             generate_kwargs["temperature"] = temperature
 
         responses = []
-        self.last_logprobs = []
         for image, question_prompt in zip(images, question_prompts, strict=True):
             base64_image = encode_image(image)
             content = [
@@ -106,9 +97,5 @@ class VLLM(VLM):
                 **generate_kwargs,
             )
             responses.append(completion.choices[0].message.content)
-            choice_logprobs = None
-            if completion.choices and hasattr(completion.choices[0], "logprobs"):
-                choice_logprobs = completion.choices[0].logprobs
-            self.last_logprobs.append(choice_logprobs)
 
         return responses

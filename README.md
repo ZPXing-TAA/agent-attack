@@ -97,7 +97,6 @@ export VLLM_API_KEY=EMPTY
 ```
 
 Then pass a model string prefixed with `vllm:` (for example, `--model vllm:Qwen/Qwen2.5-VL-7B-Instruct`).
-The vLLM wrapper requests token logprobs by default (`logprobs=True`, `top_logprobs=20`), configurable with `VLLM_TOP_LOGPROBS`.
 
 If using Gemini, first install the [gcloud CLI](https://cloud.google.com/sdk/docs/install).
 Setup a Google Cloud project and get the ID at the [Google Cloud console](https://console.cloud.google.com/).
